@@ -12,6 +12,7 @@ namespace maliput {
 namespace api {
 namespace {
 
+using rules::DirectionUsageRule;
 using rules::LaneSRange;
 using rules::RightOfWayPhaseBook;
 using rules::RightOfWayPhaseProvider;
@@ -87,15 +88,20 @@ TEST_F(RoadNetworkTest, InstantiateAndUseAccessors) {
       test::CreateIntersection(intersection_id_1, &mock_ring_1));
   intersections.emplace_back(
       test::CreateIntersection(intersection_id_2, &mock_ring_2));
+  const LaneSRange rule_zone(LaneId("the_lane"), SRange(13., 15.));
   std::vector<SpeedLimitRule> speed_limits;
   const SpeedLimitRule::Id speed_limit_id("speed_limit_id");
   speed_limits.emplace_back(SpeedLimitRule(
-      speed_limit_id, LaneSRange(LaneId("the_lane"), SRange(13., 15.)),
-      SpeedLimitRule::Severity::kStrict, 0, 30.));
+      speed_limit_id, rule_zone, SpeedLimitRule::Severity::kStrict, 0, 30.));
+  std::vector<DirectionUsageRule> direction_usage_rules;
+  const DirectionUsageRule::Id direction_usage_id("direction_usage_id");
+  direction_usage_rules.emplace_back(DirectionUsageRule(
+      direction_usage_id, rule_zone, DirectionUsageRule::Severity::kPreferred,
+      DirectionUsageRule::Direction::kBoth);
   RoadNetwork dut(std::move(road_geometry_), std::move(road_rulebook_),
                   std::move(intersections), std::move(phase_book_),
                   std::move(state_provider_), std::move(phase_provider_),
-                  std::move(speed_limits));
+                  std::move(speed_limits), std::move(direction_usage_rules));
 
   EXPECT_EQ(dut.road_geometry(), road_geometry_ptr_);
   EXPECT_EQ(dut.rulebook(), road_rulebook_ptr_);
@@ -108,6 +114,8 @@ TEST_F(RoadNetworkTest, InstantiateAndUseAccessors) {
   EXPECT_EQ(dut.phase_provider(), phase_provider_ptr_);
   EXPECT_EQ(dut.speed_limits()->size(), 1);
   EXPECT_EQ(dut.speed_limits()->at(0).id(), speed_limit_id);
+  EXPECT_EQ(dut.direction_usage_rules()->size(), 1);
+  EXPECT_EQ(dut.direction_usage_rules()->at(0).id(), direction_usage_id);
 }
 
 }  // namespace
